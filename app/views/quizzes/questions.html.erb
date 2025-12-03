@@ -1,0 +1,125 @@
+<div class="quiz-header">
+  <div class="page-title">
+    <h1><%= @quiz.title %></h1>
+    <p>Answer all questions and click submit when finished</p>
+  </div>
+  
+  <div class="quiz-progress">
+    <span>Questions: <%= @questions.count %></span>
+    <span>Participant: <%= @quiz_attempt.participant_name %></span>
+  </div>
+</div>
+
+<%= form_with url: submit_quiz_path(@quiz), local: true, data: { turbo: false } do |form| %>
+  <%= hidden_field_tag :step, 'answers' %>
+  
+  <% if flash[:alert] %>
+    <div class="alert alert-danger">
+      <%= flash[:alert] %>
+    </div>
+  <% end %>
+
+  <div class="questions-container">
+    <% @questions.each_with_index do |question, index| %>
+      <div class="question-card">
+        <div class="question-header">
+          <h3>Question <%= index + 1 %></h3>
+        </div>
+        
+        <div class="question-text">
+          <%= question.question_text %>
+        </div>
+        
+        <% if question.question_type == 'multiple_choice' %>
+          <div class="options-list">
+            <% question.options.each do |option| %>
+              <div class="option-item">
+                <label class="option-label">
+                  <%= radio_button_tag "answers[#{question.id}]", option.id, false, 
+                                       class: "option-radio", required: true %>
+                  <span class="option-text"><%= option.option_text %></span>
+                </label>
+              </div>
+            <% end %>
+          </div>
+        <% elsif question.question_type == 'true_false' %>
+          <div class="options-list">
+            <% if question.options.any? %>
+              <% question.options.each do |option| %>
+                <div class="option-item">
+                  <label class="option-label">
+                    <%= radio_button_tag "answers[#{question.id}]", option.id, false, 
+                                         class: "option-radio", required: true %>
+                    <span class="option-text"><%= option.option_text %></span>
+                  </label>
+                </div>
+              <% end %>
+            <% else %>
+              <div class="option-item">
+                <label class="option-label">
+                  <%= radio_button_tag "answers[#{question.id}]", "true", false, 
+                                       class: "option-radio", required: true %>
+                  <span class="option-text">True</span>
+                </label>
+              </div>
+              <div class="option-item">
+                <label class="option-label">
+                  <%= radio_button_tag "answers[#{question.id}]", "false", false, 
+                                       class: "option-radio", required: true %>
+                  <span class="option-text">False</span>
+                </label>
+              </div>
+            <% end %>
+          </div>
+        <% elsif question.question_type == 'short_answer' %>
+          <div class="short-answer">
+            <%= text_area_tag "answers[#{question.id}]", "", 
+                              class: "form-control", 
+                              placeholder: "Enter your answer here...", 
+                              rows: 3, required: true %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="quiz-footer">
+    <%= form.submit "Submit Quiz", class: "btn btn-success btn-lg", 
+                    data: { confirm: "Are you sure you want to submit your answers? You cannot change them after submission." } %>
+    <%= link_to "Cancel", root_path, class: "btn btn-secondary", 
+                data: { confirm: "Are you sure you want to cancel? Your progress will be lost." } %>
+  </div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Add visual feedback for selected options
+  const radioButtons = document.querySelectorAll('.option-radio');
+  radioButtons.forEach(radio => {
+    radio.addEventListener('change', function() {
+      // Remove selection from siblings
+      const siblings = document.querySelectorAll(`input[name="${this.name}"]`);
+      siblings.forEach(sibling => {
+        sibling.closest('.option-item').classList.remove('selected');
+      });
+      
+      // Add selection to current
+      this.closest('.option-item').classList.add('selected');
+    });
+  });
+  
+  // Scroll to first unanswered question on form submission attempt
+  const form = document.querySelector('form');
+  form.addEventListener('submit', function(e) {
+    const unanswered = document.querySelector('.question-card input:required:invalid');
+    if (unanswered) {
+      setTimeout(() => {
+        unanswered.closest('.question-card').scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }, 100);
+    }
+  });
+});
+</script>

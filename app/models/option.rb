@@ -7,4 +7,8 @@ class Option < ApplicationRecord
 
   scope :correct, -> { where(is_correct: true) }
   scope :incorrect, -> { where(is_correct: false) }
+
+  def correct?
+    is_correct
+  end
 end

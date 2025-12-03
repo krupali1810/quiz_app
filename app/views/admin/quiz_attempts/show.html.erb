@@ -1,0 +1,328 @@
+<div class="page-title">
+  <h1>Quiz Attempt Details</h1>
+  <p>Participant: <strong><%= @quiz_attempt.participant_name %></strong> (<%= @quiz_attempt.participant_email %>)</p>
+  <p>Quiz: <strong><%= @quiz_attempt.quiz.title %></strong></p>
+</div>
+
+<!-- Attempt Summary -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <h3><%= @quiz_attempt.score %>/<%= @quiz_attempt.total_questions %></h3>
+    <p>Final Score</p>
+  </div>
+  <div class="stat-card">
+    <h3><%= number_to_percentage((@quiz_attempt.score.to_f / @quiz_attempt.total_questions * 100), precision: 1) %></h3>
+    <p>Percentage</p>
+  </div>
+  <div class="stat-card">
+    <h3>
+      <% percentage = (@quiz_attempt.score.to_f / @quiz_attempt.total_questions * 100).round %>
+      <% if percentage >= 90 %>
+        🌟 Excellent
+      <% elsif percentage >= 70 %>
+        👍 Good
+      <% elsif percentage >= 50 %>
+        📚 Average
+      <% else %>
+        💪 Needs Work
+      <% end %>
+    </h3>
+    <p>Performance</p>
+  </div>
+  <div class="stat-card">
+    <h3>
+      <% if @quiz_attempt.completed_at %>
+        <%= time_ago_in_words(@quiz_attempt.completed_at) %> ago
+      <% else %>
+        In Progress
+      <% end %>
+    </h3>
+    <p>Completion Time</p>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="management-actions">
+  <%= link_to "← Back to Attempts", admin_quiz_attempts_path, class: "btn btn-secondary" %>
+  <%= link_to "View Quiz", admin_quiz_attempts_path(quiz_id: @quiz_attempt.quiz.id), class: "btn btn-primary" %>
+  <%= link_to "Delete Attempt", admin_quiz_attempt_path(@quiz_attempt), 
+              method: :delete, 
+              data: { 
+                turbo_method: :delete,
+                confirm: "Are you sure you want to delete this attempt? This action cannot be undone." 
+              }, 
+              class: "btn btn-danger" %>
+</div>
+
+<!-- Question-by-Question Analysis -->
+<div class="question-analysis">
+  <h2>Detailed Answer Analysis</h2>
+  
+  <% @quiz_attempt.quiz.questions.includes(:options).each_with_index do |question, index| %>
+    <% user_answer = @quiz_attempt.answers.find_by(question: question) %>
+    <% selected_option = user_answer&.selected_option %>
+    <% correct_option = question.options.find_by(is_correct: true) %>
+    <% is_correct = selected_option == correct_option %>
+    
+    <div class="question-card <%= 'correct' if is_correct %> <%= 'incorrect' if !is_correct && selected_option %>">
+      <div class="question-header">
+        <h3>
+          Question <%= index + 1 %>
+          <span class="result-indicator">
+            <% if is_correct %>
+              <span class="correct-icon">✅ Correct</span>
+            <% elsif selected_option %>
+              <span class="incorrect-icon">❌ Incorrect</span>
+            <% else %>
+              <span class="unanswered-icon">⚪ Not Answered</span>
+            <% end %>
+          </span>
+        </h3>
+      </div>
+      
+      <div class="question-content">
+        <p class="question-text"><%= question.content %></p>
+        
+        <div class="options-analysis">
+          <% question.options.each do |option| %>
+            <div class="option-item 
+                        <%= 'selected' if selected_option == option %> 
+                        <%= 'correct' if option.correct? %>">
+              <div class="option-indicator">
+                <% if option.correct? %>
+                  <span class="correct-mark">✓</span>
+                <% elsif selected_option == option %>
+                  <span class="selected-mark">→</span>
+                <% else %>
+                  <span class="option-bullet">○</span>
+                <% end %>
+              </div>
+              <div class="option-text">
+                <%= option.content %>
+                <% if option.correct? %>
+                  <span class="option-label correct-label">Correct Answer</span>
+                <% elsif selected_option == option %>
+                  <span class="option-label selected-label">User's Choice</span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        
+        <% if !is_correct && selected_option %>
+          <div class="explanation">
+            <strong>Analysis:</strong> 
+            User selected "<%= selected_option.content %>" but the correct answer was "<%= correct_option.content %>".
+          </div>
+        <% elsif !selected_option %>
+          <div class="explanation">
+            <strong>Analysis:</strong> 
+            User did not provide an answer. The correct answer was "<%= correct_option.content %>".
+          </div>
+        <% else %>
+          <div class="explanation correct-explanation">
+            <strong>✅ Perfect!</strong> 
+            User correctly selected "<%= selected_option.content %>".
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<!-- Attempt Metadata -->
+<div class="attempt-metadata">
+  <h3>Attempt Information</h3>
+  <div class="metadata-grid">
+    <div class="metadata-item">
+      <strong>Started:</strong> 
+      <%= @quiz_attempt.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+    </div>
+    <% if @quiz_attempt.completed_at %>
+      <div class="metadata-item">
+        <strong>Completed:</strong> 
+        <%= @quiz_attempt.completed_at.strftime("%B %d, %Y at %I:%M %p") %>
+      </div>
+      <div class="metadata-item">
+        <strong>Duration:</strong> 
+        <%= time_ago_in_words(@quiz_attempt.created_at, @quiz_attempt.completed_at) %>
+      </div>
+    <% end %>
+    <div class="metadata-item">
+      <strong>Quiz Created by:</strong> 
+      <%= @quiz_attempt.quiz.creator.name %>
+    </div>
+  </div>
+</div>
+
+<style>
+.question-analysis {
+  margin-top: 2rem;
+}
+
+.question-card {
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  background: white;
+}
+
+.question-card.correct {
+  border-color: #28a745;
+  background: #f8fff9;
+}
+
+.question-card.incorrect {
+  border-color: #dc3545;
+  background: #fff8f8;
+}
+
+.question-header {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.question-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.result-indicator .correct-icon {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.result-indicator .incorrect-icon {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.result-indicator .unanswered-icon {
+  color: #6c757d;
+  font-weight: bold;
+}
+
+.question-content {
+  padding: 1.5rem;
+}
+
+.question-text {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.options-analysis {
+  margin: 1rem 0;
+}
+
+.option-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  background: #f8f9fa;
+  border: 2px solid transparent;
+}
+
+.option-item.correct {
+  background: #d4edda;
+  border-color: #28a745;
+}
+
+.option-item.selected:not(.correct) {
+  background: #f8d7da;
+  border-color: #dc3545;
+}
+
+.option-item.selected.correct {
+  background: #d1ecf1;
+  border-color: #17a2b8;
+}
+
+.option-indicator {
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.correct-mark {
+  color: #28a745;
+  font-size: 1.2rem;
+}
+
+.selected-mark {
+  color: #dc3545;
+  font-size: 1.2rem;
+}
+
+.option-bullet {
+  color: #6c757d;
+}
+
+.option-text {
+  flex-grow: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.option-label {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.correct-label {
+  background: #28a745;
+  color: white;
+}
+
+.selected-label {
+  background: #dc3545;
+  color: white;
+}
+
+.explanation {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 6px;
+  background: #e9ecef;
+  border-left: 4px solid #6c757d;
+}
+
+.correct-explanation {
+  background: #d4edda;
+  border-left-color: #28a745;
+  color: #155724;
+}
+
+.attempt-metadata {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.metadata-item {
+  padding: 0.5rem 0;
+}
+</style>

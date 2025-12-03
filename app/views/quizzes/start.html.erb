@@ -1,0 +1,94 @@
+<div class="page-title">
+  <h1><%= @quiz.title %></h1>
+  <p><%= @quiz.description if @quiz.description.present? %></p>
+</div>
+
+<div class="quiz-info-card">
+  <div class="quiz-details">
+    <strong>Total Questions:</strong> <%= pluralize(@quiz.questions.count, 'question') %>
+  </div>
+</div>
+
+<div class="form-container">
+  <h3>Enter Your Details</h3>
+  <p class="text-muted">Please provide your information before starting the quiz</p>
+  
+  <%= form_with model: @quiz_attempt, url: submit_quiz_path(@quiz), local: true, data: { turbo: false } do |form| %>
+    <%= hidden_field_tag :step, 'user_info' %>
+    
+    <% if flash[:alert] %>
+      <div class="alert alert-danger">
+        <%= flash[:alert] %>
+      </div>
+    <% end %>
+    
+    <% if @quiz_attempt.errors.any? %>
+      <div class="alert alert-danger">
+        <h4><%= pluralize(@quiz_attempt.errors.count, "error") %> prohibited starting the quiz:</h4>
+        <ul>
+          <% @quiz_attempt.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="form-group">
+      <%= form.label :participant_name, "Your Name" %>
+      <%= form.text_field :participant_name, class: "form-control", placeholder: "Enter your full name", required: true %>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :participant_email, "Email Address" %>
+      <%= form.email_field :participant_email, class: "form-control", placeholder: "Enter your email address", required: true %>
+    </div>
+
+    <div class="form-actions">
+      <%= form.submit "Start Quiz", class: "btn btn-success" %>
+      <%= link_to "← Back to Home", root_path, class: "btn btn-secondary" %>
+    </div>
+  <% end %>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Start quiz page loaded');
+  
+  const form = document.querySelector('form');
+  if (form) {
+    console.log('Form found:', form);
+    console.log('Form action:', form.action);
+    console.log('Form method:', form.method);
+    
+    form.addEventListener('submit', function(e) {
+      console.log('Form submitted!');
+      console.log('Form data:', new FormData(form));
+      
+      // Check if required fields are filled
+      const name = document.querySelector('input[name="quiz_attempt[participant_name]"]');
+      const email = document.querySelector('input[name="quiz_attempt[participant_email]"]');
+      
+      console.log('Name value:', name ? name.value : 'not found');
+      console.log('Email value:', email ? email.value : 'not found');
+      
+      if (!name || !name.value.trim()) {
+        console.error('Name is required');
+        alert('Please enter your name');
+        e.preventDefault();
+        return false;
+      }
+      
+      if (!email || !email.value.trim()) {
+        console.error('Email is required');
+        alert('Please enter your email');
+        e.preventDefault();
+        return false;
+      }
+      
+      console.log('Form validation passed, submitting...');
+    });
+  } else {
+    console.error('Form not found!');
+  }
+});
+</script>

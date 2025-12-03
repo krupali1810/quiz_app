@@ -1,0 +1,32 @@
+<div class="page-title">
+  <h1>Welcome to Quiz App</h1>
+  <p>Test your knowledge with our interactive quizzes</p>
+</div>
+
+<% if @quizzes.any? %>
+  <div class="quiz-grid">
+    <% @quizzes.each do |quiz| %>
+      <div class="quiz-card">
+        <h3><%= quiz.title %></h3>
+        <p><%= truncate(quiz.description, length: 150) if quiz.description %></p>
+        
+        <div class="quiz-meta">
+          <span class="quiz-questions"><%= pluralize(quiz.questions.count, 'question') %></span>
+          <span class="quiz-creator">by <%= quiz.creator.name %></span>
+        </div>
+        
+        <div style="text-align: center;">
+          <%= link_to "Take Quiz", start_quiz_path(quiz), class: "btn btn-primary" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="empty-state">
+    <h3>No Quizzes Available</h3>
+    <p>Check back later for new quizzes to test your knowledge!</p>
+    <% if admin_logged_in? %>
+      <a href="#" class="btn btn-success">Create New Quiz</a>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,93 @@
+<div class="page-title">
+  <h1>Questions for "<%= @quiz.title %>"</h1>
+  <p>Manage questions and their options</p>
+</div>
+
+<div class="management-actions">
+  <%= link_to "Add New Question", new_admin_quiz_question_path(@quiz), class: "btn btn-success" %>
+  <%= link_to "← Back to Quizzes", admin_path, class: "btn btn-secondary" %>
+</div>
+
+<div class="quiz-table-container">
+  <% if @questions.any? %>
+    <% @questions.each_with_index do |question, index| %>
+      <div class="quiz-card" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+          <div style="flex: 1;">
+            <h4>Question <%= index + 1 %></h4>
+            <p><%= question.question_text %></p>
+            <small class="badge">Type: <%= question.question_type.humanize %></small>
+          </div>
+          <div class="actions">
+            <div class="dropdown">
+              <button class="dropdown-toggle" onclick="toggleDropdown(this)">
+                Actions ▼
+              </button>
+              <div class="dropdown-menu">
+                <%= link_to edit_admin_quiz_question_path(@quiz, question), class: "dropdown-item" do %>
+                  <span class="action-icon">✏️</span> Edit Question
+                <% end %>
+                <div class="dropdown-divider"></div>
+                <%= link_to admin_quiz_question_path(@quiz, question), 
+                            method: :delete, 
+                            data: { confirm: "Are you sure?" }, 
+                            class: "dropdown-item danger" do %>
+                  <span class="action-icon">🗑️</span> Delete Question
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <% if question.question_type == 'multiple_choice' && question.options.any? %>
+          <div class="options-list">
+            <strong>Options:</strong>
+            <ol style="margin: 0.5rem 0 0 1.5rem;">
+              <% question.options.each do |option| %>
+                <li style="margin-bottom: 0.25rem;">
+                  <%= option.option_text %>
+                  <% if option.is_correct %>
+                    <span class="status-badge status-published" style="margin-left: 0.5rem;">Correct</span>
+                  <% end %>
+                </li>
+              <% end %>
+            </ol>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <h3>No questions yet</h3>
+      <p>Start building your quiz by adding the first question!</p>
+      <%= link_to "Add First Question", new_admin_quiz_question_path(@quiz), class: "btn btn-success" %>
+    </div>
+  <% end %>
+</div>
+
+<script>
+function toggleDropdown(button) {
+  const dropdown = button.parentNode;
+  const menu = dropdown.querySelector('.dropdown-menu');
+  const isOpen = menu.classList.contains('show');
+  
+  // Close all other dropdowns
+  document.querySelectorAll('.dropdown-menu.show').forEach(function(openMenu) {
+    openMenu.classList.remove('show');
+  });
+  
+  // Toggle current dropdown
+  if (!isOpen) {
+    menu.classList.add('show');
+  }
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+  if (!event.target.closest('.dropdown')) {
+    document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
+      menu.classList.remove('show');
+    });
+  }
+});
+</script>

@@ -1,6 +1,6 @@
 class QuizAttempt < ApplicationRecord
   #associations
-  belongs_to :quiz
+  belongs_to :quiz, class_name: 'Quiz', foreign_key: 'quizes_id'
   has_many :answers, dependent: :destroy
 
   #validations

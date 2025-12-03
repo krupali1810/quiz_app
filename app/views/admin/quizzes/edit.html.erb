@@ -1,0 +1,53 @@
+<div class="page-title">
+  <h1>Edit Quiz</h1>
+  <p>Update the quiz details</p>
+</div>
+
+<div class="form-container">
+  <%= form_with model: [:admin, @quiz], local: true do |form| %>
+    <% if @quiz.errors.any? %>
+      <div class="alert alert-danger">
+        <h4><%= pluralize(@quiz.errors.count, "error") %> prohibited this quiz from being saved:</h4>
+        <ul>
+          <% @quiz.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="form-group">
+      <%= form.label :title, "Quiz Title" %>
+      <%= form.text_field :title, class: "form-control", placeholder: "Enter quiz title", required: true %>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :description, "Description" %>
+      <%= form.text_area :description, class: "form-control", rows: 4, placeholder: "Describe what this quiz covers..." %>
+    </div>
+
+    <div class="form-group">
+      <%= form.check_box :published, class: "form-check-input" %>
+      <%= form.label :published, "Published", class: "form-check-label" %>
+      <small class="form-text text-muted">Check this to make the quiz visible to users</small>
+    </div>
+
+    <div class="quiz-card" style="margin: 1rem 0;">
+      <h4>Quiz Statistics</h4>
+      <div class="form-row">
+        <div>
+          <strong>Questions:</strong> <%= pluralize(@quiz.questions.count, 'question') %>
+        </div>
+        <div>
+          <strong>Created:</strong> <%= @quiz.created_at.strftime("%B %d, %Y") %>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <%= form.submit "Update Quiz", class: "btn btn-success" %>
+      <%= link_to "Manage Questions", admin_quiz_questions_path(@quiz), class: "btn btn-primary" %>
+      <%= link_to "Cancel", admin_path, class: "btn btn-secondary" %>
+    </div>
+  <% end %>
+</div>

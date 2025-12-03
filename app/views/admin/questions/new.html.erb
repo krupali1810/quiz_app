@@ -1,0 +1,179 @@
+<div class="page-title">
+  <h1>Add Question to "<%= @quiz.title %>"</h1>
+  <p>Create a new question with multiple choice options</p>
+</div>
+
+<div class="form-container">
+  <%= form_with model: [:admin, @quiz, @question], local: true, data: { turbo: false } do |form| %>
+    <% if @question.errors.any? %>
+      <div class="alert alert-danger">
+        <h4><%= pluralize(@question.errors.count, "error") %> prohibited this question from being saved:</h4>
+        <ul>
+          <% @question.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="form-group">
+      <%= form.label :question_text, "Question" %>
+      <%= form.text_area :question_text, class: "form-control", rows: 3, placeholder: "Enter your question here...", required: true %>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :question_type, "Question Type" %>
+      <%= form.select :question_type, 
+          options_for_select([
+            ['Multiple Choice', 'multiple_choice'],
+            ['True/False', 'true_false'],
+            ['Short Answer', 'short_answer']
+          ], @question.question_type || 'multiple_choice'), 
+          {}, 
+          {class: "form-control", id: "question_type_select"} %>
+    </div>
+
+    <div id="options_section">
+      <h4>Answer Options</h4>
+      <p class="text-muted">Select the correct answer(s) by checking the checkbox next to each option. Minimum 2 options required.</p>
+      
+      <div id="options_container">
+        <%= form.fields_for :options do |option_form| %>
+          <div class="option-field" data-option-index="<%= option_form.index %>">
+            <div style="display: flex; align-items: center; margin-bottom: 1rem; gap: 1rem;">
+              <div style="flex: 1;">
+                <%= option_form.text_field :option_text, class: "form-control", placeholder: "Enter option text..." %>
+              </div>
+              <div>
+                <%= option_form.check_box :is_correct, class: "form-check-input" %>
+                <%= option_form.label :is_correct, "Correct", class: "form-check-label" %>
+              </div>
+              <div>
+                <button type="button" class="btn-remove-option" onclick="removeOption(this)" style="background: #e74c3c; color: white; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      
+      <div style="margin-top: 1rem;">
+        <button type="button" id="add_option_btn" onclick="addOption()" class="btn btn-secondary">
+          + Add Another Option
+        </button>
+        <span id="option_count" style="margin-left: 1rem; color: #7f8c8d;"></span>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <%= form.submit "Create Question", class: "btn btn-success" %>
+      <%= link_to "Cancel", admin_quiz_questions_path(@quiz), class: "btn btn-secondary" %>
+      <%= link_to "← Back to Quiz List", admin_path, class: "btn btn-secondary" %>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  let optionIndex = <%= @question.options.size %>;
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    const questionTypeSelect = document.getElementById('question_type_select');
+    const optionsSection = document.getElementById('options_section');
+    
+    function toggleOptionsSection() {
+      if (questionTypeSelect.value === 'multiple_choice') {
+        optionsSection.style.display = 'block';
+      } else {
+        optionsSection.style.display = 'none';
+      }
+    }
+    
+    questionTypeSelect.addEventListener('change', toggleOptionsSection);
+    toggleOptionsSection(); // Initial call
+    updateOptionCount();
+  });
+  
+  function addOption() {
+    const container = document.getElementById('options_container');
+    const newOption = document.createElement('div');
+    newOption.className = 'option-field';
+    newOption.setAttribute('data-option-index', optionIndex);
+    
+    newOption.innerHTML = `
+      <div style="display: flex; align-items: center; margin-bottom: 1rem; gap: 1rem;">
+        <div style="flex: 1;">
+          <input type="text" name="question[options_attributes][${optionIndex}][option_text]" class="form-control" placeholder="Enter option text...">
+        </div>
+        <div>
+          <input type="hidden" name="question[options_attributes][${optionIndex}][is_correct]" value="0">
+          <input type="checkbox" name="question[options_attributes][${optionIndex}][is_correct]" value="1" class="form-check-input" id="question_options_attributes_${optionIndex}_is_correct">
+          <label for="question_options_attributes_${optionIndex}_is_correct" class="form-check-label">Correct</label>
+        </div>
+        <div>
+          <button type="button" class="btn-remove-option" onclick="removeOption(this)" style="background: #e74c3c; color: white; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+            ✕
+          </button>
+        </div>
+      </div>
+    `;
+    
+    container.appendChild(newOption);
+    optionIndex++;
+    updateOptionCount();
+  }
+  
+  function removeOption(button) {
+    const optionField = button.closest('.option-field');
+    const optionsCount = document.querySelectorAll('.option-field:not(.removed)').length;
+    
+    if (optionsCount <= 2) {
+      alert('Minimum 2 options required!');
+      return;
+    }
+    
+    optionField.style.display = 'none';
+    optionField.classList.add('removed');
+    updateOptionCount();
+  }
+  
+  function updateOptionCount() {
+    const visibleOptions = document.querySelectorAll('.option-field:not(.removed)');
+    document.getElementById('option_count').textContent = `(${visibleOptions.length} options)`;
+  }
+  
+  // Add form validation before submission
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        const questionType = document.getElementById('question_type_select').value;
+        
+        if (questionType === 'multiple_choice') {
+          const visibleOptions = document.querySelectorAll('.option-field:not(.removed)');
+          const filledOptions = Array.from(visibleOptions).filter(option => {
+            const input = option.querySelector('input[type="text"]');
+            return input && input.value.trim() !== '';
+          });
+          
+          if (filledOptions.length < 2) {
+            e.preventDefault();
+            alert('Please provide at least 2 options with text for multiple choice questions.');
+            return false;
+          }
+          
+          const checkedOptions = Array.from(filledOptions).filter(option => {
+            const checkbox = option.querySelector('input[type="checkbox"]');
+            return checkbox && checkbox.checked;
+          });
+          
+          if (checkedOptions.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one correct option.');
+            return false;
+          }
+        }
+      });
+    }
+  });
+</script>

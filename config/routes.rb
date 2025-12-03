@@ -10,5 +10,35 @@ Rails.application.routes.draw do
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   # Defines the root path route ("/")
-  # root "posts#index"
+  root "home#index"
+  
+  # Quiz taking routes
+  resources :quizzes, only: [:show] do
+    member do
+      get :start
+      post :submit
+      get :result
+    end
+  end
+  
+  # Admin routes
+  get "admin/login", to: "admin#login"
+  post "admin/login", to: "admin#create_session"
+  delete "admin/logout", to: "admin#destroy_session"
+  get "admin", to: "admin#dashboard"
+  
+  # Admin quiz management
+  namespace :admin do
+    resources :quizzes do
+      member do
+        patch :toggle_published
+      end
+      resources :questions, except: [:show]
+    end
+    resources :quiz_attempts, only: [:index, :show, :destroy] do
+      collection do
+        delete :bulk_destroy
+      end
+    end
+  end
 end

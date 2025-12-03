@@ -1,0 +1,123 @@
+<div class="result-container">
+  <div class="result-header">
+    <h1>Quiz Completed! 🎉</h1>
+    <h2><%= @quiz.title %></h2>
+  </div>
+
+  <div class="score-card">
+    <div class="score-circle">
+      <div class="score-number">
+        <%= @quiz_attempt.score %>/<%= @quiz_attempt.total_questions %>
+      </div>
+      <div class="score-percentage">
+        <%= number_to_percentage((@quiz_attempt.score.to_f / @quiz_attempt.total_questions * 100), precision: 1) %>
+      </div>
+    </div>
+    
+    <div class="score-details">
+      <h3>Your Results</h3>
+      <div class="result-stats">
+        <div class="stat-item">
+          <strong>Correct Answers:</strong> <%= @quiz_attempt.score %>
+        </div>
+        <div class="stat-item">
+          <strong>Total Questions:</strong> <%= @quiz_attempt.total_questions %>
+        </div>
+        <div class="stat-item">
+          <strong>Completed:</strong> <%= @quiz_attempt.completed_at.strftime("%B %d, %Y at %I:%M %p") %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="performance-message">
+    <% percentage = (@quiz_attempt.score.to_f / @quiz_attempt.total_questions * 100).round %>
+    <% if percentage >= 90 %>
+      <div class="message excellent">
+        <h3>Excellent! 🌟</h3>
+        <p>Outstanding performance! You have a great understanding of the material.</p>
+      </div>
+    <% elsif percentage >= 70 %>
+      <div class="message good">
+        <h3>Good Job! 👍</h3>
+        <p>Well done! You have a solid grasp of most concepts.</p>
+      </div>
+    <% elsif percentage >= 50 %>
+      <div class="message average">
+        <h3>Not Bad! 📚</h3>
+        <p>You're on the right track. A bit more study and you'll improve!</p>
+      </div>
+    <% else %>
+      <div class="message needs-improvement">
+        <h3>Keep Learning! 💪</h3>
+        <p>Don't give up! Review the material and try again when you're ready.</p>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="answer-review">
+    <h3>Review Your Answers</h3>
+    <div class="answers-list">
+      <% @answers.each_with_index do |answer, index| %>
+        <div class="answer-item <%= answer.is_correct? ? 'correct' : 'incorrect' %>">
+          <div class="answer-header">
+            <h4>Question <%= index + 1 %> 
+              <span class="answer-status">
+                <%= answer.is_correct? ? '✅ Correct' : '❌ Incorrect' %>
+              </span>
+            </h4>
+          </div>
+          
+          <div class="answer-content">
+            <p class="question-text"><%= answer.question.question_text %></p>
+            
+            <div class="answer-details">
+              <div class="your-answer">
+                <strong>Your Answer:</strong> 
+                <span class="<%= answer.is_correct? ? 'correct-text' : 'incorrect-text' %>">
+                  <%= answer.selected_option&.option_text || "No answer recorded" %>
+                </span>
+              </div>
+              
+              <% unless answer.is_correct? %>
+                <div class="correct-answer">
+                  <strong>Correct Answer:</strong> 
+                  <span class="correct-text">
+                    <%= answer.question.options.find_by(is_correct: true)&.option_text || "Manual review required" %>
+                  </span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="result-actions">
+    <%= link_to "Take Another Quiz", root_path, class: "btn btn-primary" %>
+    <button onclick="window.print()" class="btn btn-secondary">Print Results</button>
+    <button onclick="shareResults()" class="btn btn-secondary">Share Results</button>
+  </div>
+</div>
+
+<script>
+function shareResults() {
+  const score = <%= @quiz_attempt.score %>;
+  const total = <%= @quiz_attempt.total_questions %>;
+  const percentage = Math.round((score / total) * 100);
+  const text = `I just completed "${<%= @quiz.title.to_json.html_safe %>}" and scored ${score}/${total} (${percentage}%)! 🎉`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: 'Quiz Results',
+      text: text,
+      url: window.location.href
+    });
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Results copied to clipboard!');
+    });
+  }
+}
+</script>
